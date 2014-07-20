@@ -1,0 +1,78 @@
+#!/usr/bin/python
+import numpy as np
+import cv2
+import sys
+import argparse
+from images2gif import writeGif
+from PIL import Image
+
+# for debugging
+from IPython.core.debugger import Tracer
+
+DEFAULT_MASK_THRESHOLD = 127
+DEFAULT_SAMPLE_RATE = 20
+DEFAULT_GIF_DURATION = 0.3
+
+def cg(input_filepath, output_filepath, mask_filepath, sample_rate):
+    # setup video input
+    capture = cv2.VideoCapture(input_filepath)
+    if not capture.isOpened():
+        print 'error: capture is not opened'
+        sys.exit()
+
+    # read base image   # first frame of the video
+    _, base = capture.read()
+
+    # read mask and mask_inv image
+    mask = cv2.imread(mask_filepath)
+    if mask is None:
+        print 'error: mask file is not exist'
+        sys.exit()
+    mask = cv2.resize(mask, (base.shape[1], base.shape[0]))
+    mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    ret, mask = cv2.threshold(mask, DEFAULT_MASK_THRESHOLD, 255, cv2.THRESH_BINARY)
+    mask_inv = cv2.bitwise_not(mask)
+
+    # base image: AND with mask
+    base_masked = cv2.bitwise_and(base, base, mask = mask_inv)
+
+    # operating frames
+    c = 0
+    frames = []
+    while True:
+        _, frame = capture.read()
+
+        if c % sample_rate == 0:
+            frame_masked = cv2.bitwise_and(frame, frame, mask = mask)
+            frame_cg = cv2.bitwise_or(base_masked, frame_masked)
+            # add to array
+            r_frame_cg = cv2.cvtColor(frame_cg, cv2.COLOR_BGR2RGB)
+            pil_frame_cg = Image.fromarray(frame_cg).copy()
+            #print pil_frame_cg
+            frames.append(pil_frame_cg)
+
+        c += 1
+        if capture.get(cv2.cv.CV_CAP_PROP_POS_FRAMES) \
+            == capture.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT):
+            break
+
+    writeGif(output_filepath, frames, duration=DEFAULT_GIF_DURATION, dither=0)
+
+    # end
+    print str(c) + ' frames are processed.'
+    capture.release()
+
+def main():
+    parser = argparse.ArgumentParser(description='Cinemagraph Converter (.avi video to .gif animation)')
+    parser.add_argument('-i', '--input', help='Path of input .avi video', required=True)
+    parser.add_argument('-o', '--output', help='Path of output .gif animation', required=True)
+    parser.add_argument('-m', '--mask', help='Path of mask image', required=True)
+    parser.add_argument('-s', '--sample-rate', help='Sample rate of the video', type=int, default=DEFAULT_SAMPLE_RATE)
+    args = vars(parser.parse_args())
+
+    print 'start cg...'
+    cg(args['input'], args['output'], args['mask'], args['sample_rate'])
+    print 'done'
+
+if __name__ == "__main__":
+    main()

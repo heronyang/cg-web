@@ -1,0 +1,21 @@
+#!/bin/bash
+find_and_exec(){
+    if [ ! -f ../www/server/php/files/example.avi ]; then
+        echo "not found.. skip"
+        return
+    fi
+
+    current_time=$(date "+%Y-%m-%d_%H-%M-%S")
+    input_path=./input_videos/$current_time.avi
+    output_path=../www/cgs/$current_time.gif
+
+    sudo mv ../www/server/php/files/example.avi $input_path
+    echo $input_path
+    sudo ./cg -i $input_path -o $output_path -m mask.jpg -s 100
+}
+
+while :
+do
+    find_and_exec
+    sleep 1
+done
