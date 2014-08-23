@@ -114,7 +114,7 @@ $(function () {
         done: function (e, data) {
             $.each(data.result.files, function (index, file) {
                 $('<p/>').text(file.name).appendTo('#files');
-                window.location.replace("/gallery.php");
+                window.location.replace("/bridge.html");
             });
         },
         progressall: function (e, data) {
