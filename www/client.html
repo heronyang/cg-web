@@ -1,0 +1,40 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <!-- hello -->
+        <script>
+            var result = [];
+			var p1 = [2,5];
+			var p2 = [4,5];
+			
+			result.push(p1);
+			result.push(p2);
+			
+			
+			
+            function sendDrawPoints() {
+				
+				var message = JSON.stringify(result);
+				console.log(message);
+                $.ajax({
+                    type: "GET",
+                    dataType: "text",
+                    url: "http://cg.nctucs.net/parser.php?data="+message,
+                    error: function(data) {
+                        console.log(data);
+                    },
+                    success: function(data) {
+                        console.log(data);
+                    }
+                });
+            }
+
+            $( document ).ready(function() {
+                console.log( "ready!" );
+                sendDrawPoints();
+            });
+        </script>
+    </body>
+</html>
