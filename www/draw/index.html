@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="lib/jquery/jquery-1.8.2.min.js"></script>
+	<style type="text/css">
+
+	#content{
+		position: absolute;
+		top: 0px;
+		left: 0px;
+		right: 0px;
+		bottom: 0px;
+		overflow:hidden;
+		background-color:#FFF;
+	}
+
+	#canvas{
+		cursor:crosshair ;
+		background-color:#FFF;
+	}
+	</style>
+	
+	<script type="text/javascript"> //save #node  output?  point填滿?
+
+	var ctx, color = "#000";
+	var result = new Array();	
+	var count = 2;
+
+	$(document).ready(function () {
+		// setup a new canvas for drawing wait for device init
+		setTimeout(function(){
+		   newCanvas();
+		}, 1000);
+		//console.log(result);
+	});
+
+		// function to setup a new canvas for drawing
+	function newCanvas(){
+		var canvas = '<canvas id="canvas" style="border:1px solid #d3d3d3;"></canvas>';
+		$("#content").html(canvas);
+	 
+		// setup canvas
+		ctx = document.getElementById("canvas").getContext("2d");
+		var img = new Image();
+		result[0] = new Array(2);
+		result[1] = new Array(2);
+		img.onload = function(){
+			ctx.canvas.height = this.height;
+			ctx.canvas.width = this.width;		
+			result[0][0] = this.height;
+			result[0][1] = this.width;
+			ctx.drawImage(img,0,0);
+			ctx.strokeStyle = color;
+			ctx.lineWidth = 3;
+			result[1][1] = ctx.lineWidth;
+		}
+		img.src = 'test.jpg';
+		
+		// setup to trigger drawing on mouse or touch
+		$("#canvas").drawTouch();
+		$("#canvas").drawPointer();
+		$("#canvas").drawMouse();
+	}
+
+	// prototype to	start drawing on touch using canvas moveTo and lineTo
+	$.fn.drawTouch = function() {
+		var start = function(e) {
+			e = e.originalEvent;
+			ctx.beginPath();
+			x = e.changedTouches[0].pageX;
+			y = e.changedTouches[0].pageY;
+			ctx.moveTo(x,y);
+		};
+		var move = function(e) {
+			e.preventDefault();
+			e = e.originalEvent;
+			x = e.changedTouches[0].pageX;
+			y = e.changedTouches[0].pageY;
+			ctx.lineTo(x,y);
+			
+			//save result
+			result[count] = new Array(2);
+			result[count][0] = x;
+			result[count][1] = y;
+			//console.log("c: " + count + ",x: " + result[count][0] + ", y: " + result[count][1]); 
+			count++;
+			
+			ctx.stroke();
+		};
+		$(this).on("touchstart", start);
+		$(this).on("touchmove", move);	
+	}; 
+		
+	// prototype to	start drawing on pointer(microsoft ie) using canvas moveTo and lineTo
+	$.fn.drawPointer = function() {
+		var start = function(e) {
+			e = e.originalEvent;
+			ctx.beginPath();
+			x = e.pageX;
+			y = e.pageY;
+			ctx.moveTo(x,y);
+		};
+		var move = function(e) {
+			e.preventDefault();
+			e = e.originalEvent;
+			x = e.pageX;
+			y = e.pageY;
+			ctx.lineTo(x,y);
+			
+			//save result
+			result[count] = new Array(2);
+			result[count][0] = x;
+			result[count][1] = y;
+			//console.log("c: " + count + ",x: " + result[count][0] + ", y: " + result[count][1]); 
+			count++;
+				
+			ctx.stroke();
+		};
+		$(this).on("MSPointerDown", start);
+		$(this).on("MSPointerMove", move);
+	};        
+		
+	// prototype to	start drawing on mouse using canvas moveTo and lineTo
+	$.fn.drawMouse = function() {
+		var clicked = 0;
+		var start = function(e) {
+			clicked = 1;
+			ctx.beginPath();
+			x = e.pageX;
+			y = e.pageY;
+			ctx.moveTo(x,y);
+		};
+		var move = function(e) {
+			if(clicked){
+				x = e.pageX;
+				y = e.pageY;
+				ctx.lineTo(x,y);
+				
+				//save result
+				result[count] = new Array(2);
+				result[count][0] = x;
+				result[count][1] = y;
+				console.log("c: " + count + ",x: " + result[count][0] + ", y: " + result[count][1]); 				
+				count++;
+				result[1][0] = count-1;
+				ctx.stroke();
+			}
+		};
+		var stop = function(e) {
+			clicked = 0;
+		};
+		$(this).on("mousedown", start);
+		$(this).on("mousemove", move);
+		$(window).on("mouseup", stop);
+	};
+		
+	</script>
+</head>
+	
+<body>
+
+	<div id="content">Loading Canvas...</div>
+	
+	<script>
+	function sendDrawPoints() {
+		var message = JSON.stringify(result);
+		console.log(message);
+        $.ajax({
+            type: "GET",
+            dataType: "text",
+            url: "http://cg.nctucs.net/parser.php?data="+message,
+            error: function(data) {
+                console.log(data);
+            },
+            success: function(data) {
+                console.log(data);
+            }
+        });
+    }
+	</script>
+	
+	<button style="position:absolute; bottom:0px;" onclick="sendDrawPoints()">click</button>
+	
+</body>
+</html>
